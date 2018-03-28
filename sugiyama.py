@@ -9,18 +9,18 @@ import random
 import string
 import math
 
-# 1. Entfernen von Zyklen
-# 2. Schichtzuuordnung
-# 3. Kreuzungsreduktion
-# 4. Koordinatenzuweisung
-# 5. Wiederherstellung der Zyklen
+# 1. Eliminate cycles
+# 2. Assign nodes to levels
+# 3. Minimize edge crosses
+# 4. Assign nodes to cartesian coordinates
+# 5. Restore original cycles
 
-# 1. Entfernen von Zyklen, baue Reienfolge mit Anzahl der Rueckwaertskanten minimal.
-#   (a) Speicher Quellen und Senken in zwei verschiedene Listen
-#   (b) Entferne zunehmends Quellen und fuege sie der Quellenliste hinzu
-#   (c) entferne zunehmends Senken und fuege sie der Senkenliste hinzu
-#   (d) Waehle den naechsten Kandidaten anhand der Einwaerts- und Auswaertsgrade. rangOut = maxNode( [R_out(v) - R_in(v) for v in G] )
-#       (e) entferne v aus G und fuege der Quellenliste hinzu
+# 1. Eliminate cycles, build succession with minimal count of backedge.
+#   (a) Save sources and sinks in two different lists
+#   (b) Remove source nodes successively and add to source list
+#   (c) remove sink nodes successively and add to sink list
+#   (d) chose next candidate according to in- and out-rank of node, rangOut = maxNode( [R_out(v) - R_in(v) for v in G] )
+#       (e) remove v from Graph and add to source list
 def cycleAnalysis(G):
     N = copy.deepcopy(G)    # graph will be altered... copy graph
     printGraph(N)
@@ -73,10 +73,11 @@ def invertBackEdges(G, S):
     return N
 
 
-# 2. Weise die Knoten waagerechten Schichten zu
-#   (a) Ermittle alle Senken
-#   (b) Ordne sie auf einer neuen Schicht an
-#   (c) Entferne alle Senken aus dem Graph und 
+# 2. Assign each node to horizontal Level
+#   (a) Determine sinks
+#   (b) Assign them to new level
+#   (c) Deleate all sinks from graph 
+
 # takes acyclic Graph
 def levelAssignment(G):
     N = copy.deepcopy(G)
@@ -161,75 +162,89 @@ def toIndex(A, B):
         if a in B:
             yield B.index(a)
 
-# Naive Exhaustive, Two Level comparison
-# O( N! * E(N) * 2 )
-def minCrossing(N, Levels):
+def costMatrix(N, L1, L2):
+    M = [ [ 0 for _ in L1 ] for _ in L1 ]
 
-    L = [ x for x in Levels ]    # copy the list, just to make sure..
+    for ((ui, u), (vi, v)) in itertools.combinations(enumerate(L1), 2):
+        Eu = toIndex(N[u]['out'] + N[u]['in'], L2)   # get indices for edges from and to level 2
+        Ev = toIndex(N[v]['out'] + N[v]['in'], L2)   # get indices for edges from and to level 2
 
-    R = [ Levels[-1] ]
+        for uc_i, vc_i in itertools.product(Eu, Ev):
+            if uc_i > vc_i:     # (s, d) if destination of u edge is further than destination of v edge:
+                # in case u left to v, it's a crossing
+                M[ui][vi] += 1
+            if uc_i < vc_i:
+                # in case v left to u, it's a crossing
+                M[vi][ui] += 1
 
-    # compare level_n+1 with level_n.
-    # T will be upper level of pair, B will be lower level of pair.
-    # [ 1, 2, 3, 4, 5, 6 ] -> [ (5, 6), (4, 5), (3, 4), (2, 3), (1, 2) ]
-    # (T, B)_0 = (5, 6), (T, B)_1 = (4, 5), (T, B)_n = (1, 2) ]
-    # T will be used to permute and after chosing an optimal permutation will be used as base 
-    # for next level (B) cross testing
+    return M
 
-    B = L.pop()
-    while L:
-        T = L.pop()
+def crossSort(A, M):
+    if len(A) < 2:
+        return A
 
-        minCross = sys.maxint
-        chosenPerm = T
-        for P in itertools.permutations(T):  # permute level assignment and chose will least crossings
-            crossing = 0
+    p = len(A) / 2
 
-            for ((ui, u), (vi, v)) in itertools.combinations(enumerate(P), 2):
-                Eu = toIndex(N[u]['out'] + N[u]['in'], B)   # get indices for edges from and to level 2
-                Ev = toIndex(N[v]['out'] + N[v]['in'], B)   # get indices for edges from and to level 2
+    L = crossSort(A[:p], M)
+    R = crossSort(A[p:], M)
 
-                for uc_i, vc_i in itertools.product(Eu, Ev):
-                    #print 'uc_i: {}, vc_i: {}'.format(uc_i, vc_i)
-                    if uc_i > vc_i:     # (s, d) if destination of u edge is further than destination of v edge:
-                        crossing += 1
+    S = []
+    li = ri = 0
+    while li < len(L) and ri < len(R):
+        l = L[li]
+        r = R[ri]
 
-            #print 'Permutation: {}, Cnt: {}'.format(P, crossing)
-            if crossing < minCross:
-                minCross = crossing
-                chosenPerm = P
+        if(M[l][r] <= M[r][l]):
+            S += [l]
+            li += 1
+        else:
+            S += [r]
+            ri += 1
 
-        #print 'minCrossing: {}, for Permutation: {} with pairs (T, B) = ({}, {})\n'.format(minCross, chosenPerm, [x for x in T], [x for x in B])
-        B = chosenPerm   # normally B = T for next pair, but we have use chosen an optimal permutation
-        R += [ [x for x in B] ] # append permutation with least crosses
+    S += L[li:]
+    S += R[ri:]
 
-    return [ x for x in reversed(R) ]
+    return S
+
+def twoLevelCrossMin(N, Levels):
+    Lvl = [ x for x in Levels ]    # copy the list, just to make sure..
+
+    R = [ Levels[-1] ]  # take over first entry.. it won't be modified
+
+    B = Lvl.pop()
+    while Lvl:
+        T = Lvl.pop()
+
+        M = costMatrix(N, T, B)
+        T_i = crossSort(range(len(T)), M)       # not B = T, but B = sorted T => B = recMinCross(T, M), use as base for next iteration
+        B = [ T[i] for i in T_i ]
+
+        R += [ B ] # append permutation with least crosses
+
+    return [ x for x in reversed(R) ]  # because of popping R is reversed
 
 def sugiyama(G):
     S = cycleAnalysis(G)
     N = invertBackEdges(G, S)   # invertierte Kanten braucht man nicht speichern, man nimmt einfahc den original graph..
     L = levelAssignment(N)
     N, L_b = getInBetweenNodes(G, L)    # no backedges in N
-    R = minCrossing(N, L)
+    R = twoLevelCrossMin(N, L)
     return N, R
 
 if  __name__=='__main__':
-    #for i in pyramid(['a', 'b', 'c','d']):
-    #    print i
-    #exit()
     #edges = [(1, 3), (1, 4), (2, 6), (3, 2), (3, 7), (3, 8), (4, 5), (4, 6), (4, 8), (4, 9), (6, 10), (7, 10), (7, 11), (8, 7), (9, 11), (10, 12), (11, 12)]
     edges = [ ('A', 'B'), ('A', 'E'), ('B', 'C'), ('C', 'D'), ('D', 'C'), ('A', 'C')]
     #edges = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (6, 7), (5, 7) ]
     G = graphFromEdges(edges)
 
-    printGraph(G)
     S = cycleAnalysis(G)
-    G_inv = invertBackEdges(G, S)   # invertierte Kanten braucht man nicht speichern, man nimmt einfahc den original graph..
+    G_inv = invertBackEdges(G, S)   # inverted edges are only for level assignment
     L = levelAssignment(G_inv)
     G_inv, L_b = getInBetweenNodes(G_inv, L)
-    print G_inv
+    P = twoLevelCrossMin(G_inv, L)
+
+    print 'original graph'
+    printGraph(G)
+    print 'graph with helper edges'
+    printGraph(G)
     print L
-    #print S
-    #print 'popCrossing:'
-    P = minCrossing(G_inv, L)
-    print P
