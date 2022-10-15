@@ -1,7 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
 import copy
 from graphLib import *
 import itertools
@@ -49,7 +48,7 @@ def cycleAnalysis(G):
 
         # (d)
         elif N:
-            o = max(N, key = lambda n: len(N[n]['out']) - len(N[n]['in']) )    # get node with maximum rangOut 
+            o = max(N, key = lambda n: len(N[n]['out']) - len(N[n]['in']) )    # get node with maximum rangOut
             # (e)
             Sl += [ o ]
             removeNode(N, o)
@@ -67,7 +66,7 @@ def invertBackEdges(G, S):
             j = S.index(c)
             if j < i:
                 B += [ (n, c) ]
-    
+
     twistEdges(N, B)
 
     return N
@@ -76,7 +75,7 @@ def invertBackEdges(G, S):
 # 2. Assign each node to horizontal Level
 #   (a) Determine sinks
 #   (b) Assign them to new level
-#   (c) Deleate all sinks from graph 
+#   (c) Delete all sinks from graph
 
 # takes acyclic Graph
 def levelAssignment(G):
@@ -87,7 +86,7 @@ def levelAssignment(G):
     while N:    # while N not empty
         # (a)
         sinks = [ n for n in N if len(N[n]['out']) == 0 ]
-    
+
         # (c)
         L += [ sinks ]      # L = []; L += [ ['A', 'B', 'C'] ] =>  L = [ ['A', 'B', 'C'] ]
 
@@ -99,7 +98,7 @@ def levelAssignment(G):
     return [ x for x in reversed(L) ]
 
 # take (a, b) and if there lies a level between them (which they are not connected over):
-#   take a as from node, 
+#   take a as from node,
 #   create a new node
 #     connect that new node to a
 #   connect that new node to b
@@ -148,7 +147,7 @@ def getInBetweenNodes(G, L):
             for c in node['out']:
                 cLevel = N[c]['level']
 
-                dif = math.fabs(cLevel - nLevel);    # if more than two level between 
+                dif = math.fabs(cLevel - nLevel)    # if more than two level between
                 if dif > 1:
                     IB += [ (n, c) ]
 
@@ -183,7 +182,7 @@ def crossSort(A, M):
     if len(A) < 2:
         return A
 
-    p = len(A) / 2
+    p = len(A) // 2
 
     L = crossSort(A[:p], M)
     R = crossSort(A[p:], M)
@@ -216,7 +215,7 @@ def twoLevelCrossMin(N, Levels):
         T = Lvl.pop()
 
         M = costMatrix(N, T, B)
-        T_i = crossSort(range(len(T)), M)       # not B = T, but B = sorted T => B = recMinCross(T, M), use as base for next iteration
+        T_i = crossSort(list(range(len(T))), M)       # not B = T, but B = sorted T => B = recMinCross(T, M), use as base for next iteration
         B = [ T[i] for i in T_i ]
 
         R += [ B ] # append permutation with least crosses
@@ -243,8 +242,8 @@ if  __name__=='__main__':
     G_inv, L_b = getInBetweenNodes(G_inv, L)
     P = twoLevelCrossMin(G_inv, L)
 
-    print 'original graph'
+    print('original graph')
     printGraph(G)
-    print 'graph with helper edges'
+    print('graph with helper edges')
     printGraph(G)
-    print L
+    print(L)

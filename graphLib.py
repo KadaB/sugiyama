@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 def removeEdges(N, E):
     for s, d in E:
@@ -23,17 +23,17 @@ def removeNode(N, n):
     for p in N[n]['in']:    # for parent (remove all that have this as child)
         N[p]['out'].remove(n)
 
-    for c in N[n]['out']:           # for child (remove all that have this as parent) 
+    for c in N[n]['out']:           # for child (remove all that have this as parent)
         N[c]['in'].remove(n)
 
     del N[n]    # dictionary remove
 
 def printGraph(N):
     for n in N:
-        print '  ' + str(n)
+        print('  ' + str(n))
 
         for e in N[n]:
-            print '     {}: {}'.format(e, N[n][e])
+            print('     {}: {}'.format(e, N[n][e]))
 
 def twistEdges(N, E):
     removeEdges(N, E)
