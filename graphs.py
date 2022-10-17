@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from sugiyama import *
@@ -6,9 +6,6 @@ from sugiyama import *
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
-
-import cairo
-
 
 # Data structure for Graph
 #   nodes = { 'A': {'in': [], 'out': []}, 'B': {..}, ..}
@@ -48,7 +45,7 @@ class GraphDrawer(Gtk.Window):
 
 
     def arrowEdges(self, start, end):
-        # calculate arrow head by taking a certain lenght for the arrow head and 
+        # calculate arrow head by taking a certain length for the arrow head and
         # rotate the angle of the arrow for one side
         # and rotate the arrow line by the mirror angle for the other side.
         start_x, start_y = start
@@ -132,7 +129,7 @@ class GraphDrawer(Gtk.Window):
     #        nodes['A'] = [[p0, .., p_n], [c0, .., c_n], (x, y)]
     #                      nodes['A'][0]  nodes['A'][1]  nodes['A'][2]
     #                          in               out        pos
-        
+
         # draw edges first
         for n in nodes:                 # n is number... should be label.. or string
             x, y = nodes[n]['pos']  # get position
@@ -140,7 +137,7 @@ class GraphDrawer(Gtk.Window):
                 x2, y2 = lc = nodes[c]['pos']   # get position for child (in different notation)
 
                 if nodes[c].get('between') == None:  # child index positive  (zwischenknoten
-                    self.drawArrow((x, y), lc) 
+                    self.drawArrow((x, y), lc)
                 else:
                     # draw line to Kasten
                     cr.save()
@@ -171,16 +168,16 @@ class GraphDrawer(Gtk.Window):
     def on_draw(self, wid, cr):
 
         self.cr = cr
-        w, h = self.get_size() 
+        w, h = self.get_size()
 
         ratio = float(w) / float(h)
 
         if ratio > 1.0:
             scale = (w / ratio, h)      # w is bigger... don't scale full w...
-            trans = ((ratio - 1.) * .5, 0)  # add a padding (in [0, 1.] coordinate space) 
+            trans = ((ratio - 1.) * .5, 0)  # add a padding (in [0, 1.] coordinate space)
         elif ratio < 1.0:
             scale = (w, h * ratio)
-            trans = (0, (1. - ratio) * .5)  # add a padding (in [0, 1.] coordinate space) 
+            trans = (0, (1. - ratio) * .5)  # add a padding (in [0, 1.] coordinate space)
         else:
             scale = (w, h)
             trans = (0, 0)
@@ -193,7 +190,7 @@ class GraphDrawer(Gtk.Window):
 
 # input:
 #   nodes = { 'A': [[], [], []] }
-#   levelGrid = [ [ [ 'A', 'B', 'C' ] ], .., [ 'X', 'Y', 'Z'] ]     
+#   levelGrid = [ [ [ 'A', 'B', 'C' ] ], .., [ 'X', 'Y', 'Z'] ]
 #           'List of lists' or Grid of nodes, containing node keys(of dict)
 def convertGridToCart(G, level):
     # get each level max width and overall max width
@@ -215,7 +212,7 @@ def convertGridToCart(G, level):
         y += ystep
 
 
-if __name__ == "__main__":    
+if __name__ == "__main__":
 
     #E = [ ('A', 'B'), ('A', 'E'), ('B', 'C'), ('E', 'B'), ('C' 'E'), ('C', 'D'), ('D', 'C'), ('A', 'C')]
     #E = [ ('1', '2'), ('1', '4'), ('1','6'), ('1', '3'), ('3', '4'), ('4', '5'), ('5', '2'), ('5', '6')]
@@ -223,10 +220,10 @@ if __name__ == "__main__":
     G = graphFromEdges(E)
     G, L = sugiyama(G)
 
-    print L
+    print(L)
 
     convertGridToCart(G, L)
-    print G
+    print(G)
 
     app = GraphDrawer((600, 600), G, L)
     Gtk.main()
